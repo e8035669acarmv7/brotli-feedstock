@@ -12,7 +12,7 @@ source:
   sha256: 69cdbdf5709051dd086a2f020f5abf9e32519eafe0ad6be820c667c3a9c9ee0f
 
 build:
-  number: 0
+  number: 1
   skip: true  # [win and (py36 or py27)]
 
   features:
