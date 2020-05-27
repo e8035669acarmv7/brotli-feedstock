@@ -15,7 +15,7 @@ build:
   run_exports:
     # https://abi-laboratory.pro/index.php?view=timeline&l=brotli
     # No minor versions to ensure ABI compatibility history
-    - {{ pin_subpackage('libopencv', max_pin='x.x') }}
+    - {{ pin_subpackage('brotli', max_pin='x.x') }}
 
 
 requirements:
