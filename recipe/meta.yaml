@@ -1,4 +1,4 @@
-{% set version = "1.0.7" %}
+{% set version = "1.0.9" %}
 
 package:
   name: brotli
@@ -7,12 +7,12 @@ package:
 source:
   fn: brotli-{{ version }}.tar.gz
   url: https://github.com/google/brotli/archive/v{{ version }}.tar.gz
-  sha256: 4c61bfb0faca87219ea587326c467b95acb25555b53d1a421ffa3c8a9296ee2c
+  sha256: f9e8d81d0405ba66d181529af42a3354f838c939095ff99930da6aa9cdf6fe46
   patches:
     - 0001-Add-separate-options-to-disable-shared-static-librar.patch
 
 build:
-  number: 1004
+  number: 0
   run_exports:
     # https://abi-laboratory.pro/index.php?view=timeline&l=brotli
     # No minor versions to ensure ABI compatibility history
@@ -55,7 +55,7 @@ about:
   home: http://github.com/google/brotli
   license: MIT
   license_file: LICENSE
-  summary: 'Brotli compression format'
+  summary: Brotli compression format
 
 extra:
   recipe-maintainers:
