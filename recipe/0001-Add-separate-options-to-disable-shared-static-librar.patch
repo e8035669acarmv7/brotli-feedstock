@@ -1,28 +1,27 @@
-From d6d7063ad9851a0bc0e1fc775850554d1dad13be Mon Sep 17 00:00:00 2001
+From a75759609789452ec33473065b2387b477980ef9 Mon Sep 17 00:00:00 2001
 From: Eugene Kliuchnikov <eustas@google.com>
 Date: Fri, 4 May 2018 15:22:49 +0200
 Subject: [PATCH] Add separate options to disable shared/static libraries
  build.
 
 ---
- CMakeLists.txt | 114 +++++++++++++++++++++++++++++++------------------
- 1 file changed, 73 insertions(+), 41 deletions(-)
+ CMakeLists.txt | 115 +++++++++++++++++++++++++++++--------------------
+ 1 file changed, 68 insertions(+), 47 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 99b9258..a9fe097 100644
+index 4ff3401..5c1b80d 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 2.8.6)
- 
- project(brotli C)
- 
+@@ -25,6 +25,8 @@ if (BROTLI_EMSCRIPTEN)
+ else()
+   message("-- Compiler is not EMSCRIPTEN")
+ endif()
 +option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 +option(BUILD_STATIC_LIBS "Build static libraries" ON)
-+
+ 
  # If Brotli is being bundled in another project, we don't want to
  # install anything.  However, we want to let people override this, so
- # we'll use the BROTLI_BUNDLED_MODE variable to let them do that; just
-@@ -110,11 +113,19 @@ unset(LOG2_RES)
+@@ -133,11 +135,19 @@ unset(LOG2_RES)
  set(BROTLI_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/c/include")
  mark_as_advanced(BROTLI_INCLUDE_DIRS)
  
@@ -44,19 +43,21 @@ index 99b9258..a9fe097 100644
  set(BROTLI_LIBRARIES_STATIC ${BROTLI_LIBRARIES_CORE_STATIC} ${LIBM_LIBRARY})
  mark_as_advanced(BROTLI_LIBRARIES_STATIC)
  
-@@ -137,24 +148,28 @@ endfunction()
+@@ -160,30 +170,28 @@ endfunction()
  transform_sources_list("scripts/sources.lst" "${CMAKE_CURRENT_BINARY_DIR}/sources.lst.cmake")
  include("${CMAKE_CURRENT_BINARY_DIR}/sources.lst.cmake")
  
--add_library(brotlicommon SHARED ${BROTLI_COMMON_C})
--add_library(brotlidec SHARED ${BROTLI_DEC_C})
--add_library(brotlienc SHARED ${BROTLI_ENC_C})
+-if(BROTLI_EMSCRIPTEN)
+-  set(BROTLI_SHARED_LIBS "")
+-else()
+-  set(BROTLI_SHARED_LIBS brotlicommon brotlidec brotlienc)
 +if(BUILD_SHARED_LIBS)
-+  add_library(brotlicommon SHARED ${BROTLI_COMMON_C})
-+  add_library(brotlidec SHARED ${BROTLI_DEC_C})
-+  add_library(brotlienc SHARED ${BROTLI_ENC_C})
-+endif()
+   add_library(brotlicommon SHARED ${BROTLI_COMMON_C})
+   add_library(brotlidec SHARED ${BROTLI_DEC_C})
+   add_library(brotlienc SHARED ${BROTLI_ENC_C})
+ endif()
  
+-set(BROTLI_STATIC_LIBS brotlicommon-static brotlidec-static brotlienc-static)
 -add_library(brotlicommon-static STATIC ${BROTLI_COMMON_C})
 -add_library(brotlidec-static STATIC ${BROTLI_DEC_C})
 -add_library(brotlienc-static STATIC ${BROTLI_ENC_C})
@@ -69,28 +70,29 @@ index 99b9258..a9fe097 100644
  # Older CMake versions does not understand INCLUDE_DIRECTORIES property.
  include_directories(${BROTLI_INCLUDE_DIRS})
  
--foreach(lib brotlicommon brotlidec brotlienc)
+-foreach(lib IN LISTS BROTLI_SHARED_LIBS)
 +foreach(lib ${BROTLI_LIBRARIES_CORE})
    target_compile_definitions(${lib} PUBLIC "BROTLI_SHARED_COMPILATION" )
    string(TOUPPER "${lib}" LIB)
-   set_target_properties (${lib} PROPERTIES DEFINE_SYMBOL "${LIB}_SHARED_COMPILATION" )
+   set_target_properties (${lib} PROPERTIES DEFINE_SYMBOL "${LIB}_SHARED_COMPILATION")
  endforeach()
  
--foreach(lib brotlicommon brotlidec brotlienc brotlicommon-static brotlidec-static brotlienc-static)
+-foreach(lib IN LISTS BROTLI_SHARED_LIBS BROTLI_STATIC_LIBS)
 +foreach(lib ${BROTLI_LIBRARIES_CORE} ${BROTLI_LIBRARIES_CORE_STATIC})
    target_link_libraries(${lib} ${LIBM_LIBRARY})
    set_property(TARGET ${lib} APPEND PROPERTY INCLUDE_DIRECTORIES ${BROTLI_INCLUDE_DIRS})
    set_target_properties(${lib} PROPERTIES
-@@ -164,11 +179,15 @@ foreach(lib brotlicommon brotlidec brotlienc brotlicommon-static brotlidec-stati
+@@ -195,13 +203,15 @@ foreach(lib IN LISTS BROTLI_SHARED_LIBS BROTLI_STATIC_LIBS)
    set_property(TARGET ${lib} APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${BROTLI_INCLUDE_DIRS}")
  endforeach()
  
+-if(NOT BROTLI_EMSCRIPTEN)
 -target_link_libraries(brotlidec brotlicommon)
 -target_link_libraries(brotlienc brotlicommon)
 +if(BUILD_SHARED_LIBS)
 +  target_link_libraries(brotlidec brotlicommon)
 +  target_link_libraries(brotlienc brotlicommon)
-+endif()
+ endif()
  
 -target_link_libraries(brotlidec-static brotlicommon-static)
 -target_link_libraries(brotlienc-static brotlicommon-static)
@@ -101,7 +103,7 @@ index 99b9258..a9fe097 100644
  
  # For projects stuck on older versions of CMake, this will set the
  # BROTLI_INCLUDE_DIRS and BROTLI_LIBRARIES variables so they still
-@@ -182,8 +201,13 @@ if(BROTLI_PARENT_DIRECTORY)
+@@ -215,8 +225,13 @@ if(BROTLI_PARENT_DIRECTORY)
  endif()
  
  # Build the brotli executable
@@ -116,8 +118,8 @@ index 99b9258..a9fe097 100644
 +endif()
  
  # Installation
- if(NOT BROTLI_BUNDLED_MODE)
-@@ -192,19 +216,23 @@ if(NOT BROTLI_BUNDLED_MODE)
+ if(NOT BROTLI_EMSCRIPTEN)
+@@ -226,19 +241,23 @@ if(NOT BROTLI_BUNDLED_MODE)
      RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
    )
  
@@ -153,7 +155,7 @@ index 99b9258..a9fe097 100644
  
    install(
      DIRECTORY ${BROTLI_INCLUDE_DIRS}/brotli
-@@ -214,6 +242,10 @@ endif()
+@@ -249,6 +268,10 @@ endif()  # BROTLI_EMSCRIPTEN
  
  # Tests
  
@@ -164,7 +166,7 @@ index 99b9258..a9fe097 100644
  # If we're targeting Windows but not running on Windows, we need Wine
  # to run the tests...
  if(NOT BROTLI_DISABLE_TESTS)
-@@ -336,19 +368,19 @@ function(transform_pc_file INPUT_FILE OUTPUT_FILE VERSION)
+@@ -399,22 +422,20 @@ function(transform_pc_file INPUT_FILE OUTPUT_FILE VERSION)
    file(WRITE ${OUTPUT_FILE} ${TEXT})
  endfunction()
  
@@ -174,6 +176,7 @@ index 99b9258..a9fe097 100644
 -
 -transform_pc_file("scripts/libbrotlienc.pc.in" "${CMAKE_CURRENT_BINARY_DIR}/libbrotlienc.pc" "${BROTLI_VERSION}")
 -
+-if(NOT BROTLI_EMSCRIPTEN)
 -if(NOT BROTLI_BUNDLED_MODE)
 -  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libbrotlicommon.pc"
 -    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
@@ -181,6 +184,8 @@ index 99b9258..a9fe097 100644
 -    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 -  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libbrotlienc.pc"
 -    DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+-endif()  # BROTLI_BUNDLED_MODE
+-endif()  # BROTLI_EMSCRIPTEN
 +if(BUILD_SHARED_LIBS)
 +  transform_pc_file("scripts/libbrotlicommon.pc.in" "${CMAKE_CURRENT_BINARY_DIR}/libbrotlicommon.pc" "${BROTLI_VERSION}")
 +  transform_pc_file("scripts/libbrotlidec.pc.in" "${CMAKE_CURRENT_BINARY_DIR}/libbrotlidec.pc" "${BROTLI_VERSION}")
@@ -194,9 +199,10 @@ index 99b9258..a9fe097 100644
 +    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/libbrotlienc.pc"
 +      DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
 +  endif()
- endif()
++endif()
  
  if (ENABLE_COVERAGE STREQUAL "yes")
+   SETUP_TARGET_FOR_COVERAGE(coverage test coverage)
 -- 
-2.27.0
+2.28.0
 
