@@ -12,7 +12,7 @@ source:
     - 0001-Add-separate-options-to-disable-shared-static-librar.patch
 
 build:
-  number: 0
+  number: 1
   run_exports:
     # https://abi-laboratory.pro/index.php?view=timeline&l=brotli
     # No minor versions to ensure ABI compatibility history
