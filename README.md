@@ -5,11 +5,9 @@ Home: http://github.com/google/brotli
 
 Package license: MIT
 
-Feedstock license: BSD-3-Clause
+Feedstock license: [BSD-3-Clause](https://github.com/conda-forge/brotli-feedstock/blob/master/LICENSE.txt)
 
 Summary: Brotli compression format
-
-
 
 Current build status
 ====================
