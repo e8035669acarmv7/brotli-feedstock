@@ -10,9 +10,10 @@ source:
   sha256: f9e8d81d0405ba66d181529af42a3354f838c939095ff99930da6aa9cdf6fe46
   patches:
     - 0001-Add-separate-options-to-disable-shared-static-librar.patch
+    - 0002-Fix-pkgconfig-rpath.patch
 
 build:
-  number: 2
+  number: 3
   run_exports:
     # https://abi-laboratory.pro/index.php?view=timeline&l=brotli
     # No minor versions to ensure ABI compatibility history
